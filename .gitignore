@@ -1,0 +1,5 @@
+.bvm
+/node_modules
+.env
+.vscode
+.env.example

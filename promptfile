@@ -1,0 +1,107 @@
+1. Executive Summary & Objective
+Build a production-grade, fully decoupled Agentic Voice-Cloning and MLOps Pipeline named EchoAgent. The system allows users to engage in a real-time conversational voice session, records and extracts features asynchronously via a message queue, fine-tunes a voice profile, and subsequently unlocks a "Speak to Yourself" bot session where the AI talks back using the user's cloned voice profile.
+
+The primary target is enterprise-grade architecture mastery, flawless MLOps automation, and system design clarity running on a strict bootstrap budget (~₹300–₹500 INR/mo VPS + free cloud layers).
+
+2. Complete User Journey
+Landing & Ingestion: User visits the clean frontend (hosted on Cloudflare Pages). They click "Start Conversation".
+
+Real-Time Voice Bot (Session 1): A WebSocket connection opens. A real-time conversational voice bot asks randomized personal questions for 120 seconds to naturally capture prosody, pitch, fillers, and speech rate. Audio is streamed and chunked in real-time.
+
+The Transition & Status Dashboard: At 120 seconds, the call ends. The UI displays an engaging status bar tracking background steps:
+
+Audio Cleaning & Silence Trimming
+
+Mel-Spectrogram & Feature Extraction
+
+Speaker Embedding & Model Training
+
+Registry Validation
+
+The Post-Training Fork: Once background processing completes successfully, the user profile is saved to the DB, and two buttons unlock: [Record Again] and [Speak to Yourself].
+
+The Cloned Bot (Session 2): Clicking [Speak to Yourself] launches a new real-time voice session where the AI agent converses with the user in the user's cloned voice profile.
+
+3. High-Level Architecture & Component Topology
+Plaintext
+[ Browser UI / Cloudflare Pages ] (Static Frontend - Free CDN)
+       │
+       ├── (1) WSS: Real-Time Audio Chunks
+       ▼
+[ FastAPI API Gateway ] (Stateless, Horizontal Scaling Ready)
+       │
+       ├── (2) Saves raw chunks to shared volume / temp storage
+       └── (3) Pushes background job payload to RabbitMQ
+       ▼
+[ RabbitMQ Message Broker ] (Handles spikes, retries, & Dead-Letter Queue)
+       │
+       ▼
+[ Celery Workers & PyTorch ML Engine ] (Asynchronous Processing)
+       ├── Torchaudio / Librosa Feature Extraction
+       ├── Model Training / Embedding Generation
+       └── MLflow Model Registry Tracking
+       ▼
+[ Redis & PostgreSQL / JSON State Store ] (Caching, Sessions, & User Profiles)
+4. Technology Stack & Infrastructure Blueprint
+Frontend: Vite + Tailwind CSS (hosted on Cloudflare Pages with zero-cost global edge caching).
+
+Backend Gateway: FastAPI (Python 3.11+, asynchronous routing, native WebSockets).
+
+Message Broker & Queue: RabbitMQ (robust enterprise broker) + Celery (worker task management with exponential backoff and DLQ).
+
+State & Caching: Redis (session store, pub/sub notification layer).
+
+ML Core & MLOps:
+
+PyTorch & Torchaudio / Librosa for audio processing, embedding generation, and custom lightweight model training.
+
+MLflow for experiment tracking and model artifact registry.
+
+Pytest for rigorous unit testing (API routes, WebSocket validation, tensor shapes).
+
+GitHub Actions for CI/CD automation (linting, tests, automated container builds).
+
+Production Deployment: A budget-friendly Linux VPS (DigitalOcean / Hetzner / Zeabur ~₹350–₹450/mo) running Docker Compose. (Local K3s/Minikube configuration included for Kubernetes practice).
+
+5. Directory Structure to Scaffold (/echoagent-core)
+Plaintext
+echoagent-core/
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml             # Automated GitHub Actions pipeline (Test, Build, Deploy)
+├── docker-compose.yml            # Production/Local stack: FastAPI + RabbitMQ + Redis + Worker
+├── Dockerfile                    # Multi-stage optimized Python image
+├── requirements.txt              # Pinned production dependencies
+├── pytest.ini                    # Test configuration
+├── src/
+│   ├── core/
+│   │   ├── config.py             # Environment configuration & pydantic settings
+│   │   └── interfaces.py         # Abstract Base Class (Strategy Pattern for Pluggable ML models)
+│   ├── api/
+│   │   ├── main.py               # FastAPI entrypoint, REST endpoints, WebSocket router
+│   │   └── schemas.py            # Pydantic data validation models
+│   ├── ml/
+│   │   ├── feature_extractor.py  # Torchaudio / Librosa noise cleanup & embedding logic
+│   │   └── trainer.py            # PyTorch training / fine-tuning pipeline loop
+│   └── workers/
+│       ├── celery_app.py         # Celery broker configuration
+│       └── tasks.py              # Background audio processing tasks, retries, and DLQ handlers
+└── tests/
+    ├── test_api.py               # FastAPI endpoint and WebSocket unit tests
+    └── test_ml.py                # Audio tensor shape and feature extraction tests
+6. Engineering Non-Negotiables & Enterprise Standards
+Pluggable Model Interface (Strategy Pattern):
+
+Enforce an Abstract Base Class (BaseVoiceProcessor) inside src/core/interfaces.py. The API routing and business logic must never import a specific ML model directly. Upgrading or replacing the core TTS/Voice model later must require changing only a single configuration binding.
+
+Stateless API Gateway:
+
+The FastAPI server must store zero session states in local process memory. All transient sessions and state handoffs go through Redis, allowing horizontal scaling behind a load balancer.
+
+Resilient Asynchronous Queuing:
+
+Raw user voice audio captured over WebSockets must be dumped safely to disk/volume, and a job ID pushed to RabbitMQ. If a worker crashes mid-feature-extraction, Celery must execute exponential backoff retries and route permanently failed jobs to a Dead-Letter Queue (DLQ).
+
+Rigorous MLOps CI/CD:
+
+Every git push must trigger GitHub Actions to run code linters, execute pytest suites against mock audio payloads, build the Docker image, and push artifacts cleanly.
