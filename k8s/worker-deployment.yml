@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echoagent-worker
+  namespace: echoagent
+  labels:
+    app: echoagent-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: echoagent-worker
+  template:
+    metadata:
+      labels:
+        app: echoagent-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/echoagent/echoagent:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - "celery"
+            - "-A"
+            - "src.workers.celery_app"
+            - "worker"
+            - "-l"
+            - "info"
+            - "-c"
+            - "1"
+          envFrom:
+            - configMapRef:
+                name: echoagent-config
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "1024Mi"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: echoagent-api-hpa
+  namespace: echoagent
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: echoagent-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+

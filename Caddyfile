@@ -1,0 +1,66 @@
+# Caddyfile — Reverse proxy with auto-HTTPS
+# Replace echoagent.dev with your actual domain
+
+{
+    # Global options
+    email admin@echoagent.dev
+}
+
+echoagent.dev {
+    # API and WebSocket proxy
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+
+    handle /ws/* {
+        reverse_proxy api:8000
+    }
+
+    handle /sse/* {
+        reverse_proxy api:8000 {
+            flush_interval -1
+        }
+    }
+
+    # Health check
+    handle /health {
+        reverse_proxy api:8000
+    }
+
+    # MLflow UI (optional, restrict in production)
+    handle /mlflow/* {
+        reverse_proxy mlflow:5000
+    }
+
+    # Rate limiting
+    rate_limit {
+        zone api_limit {
+            match {
+                path /api/*
+            }
+            key {remote_host}
+            events 100
+            window 1m
+        }
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+
+    log {
+        output file /var/log/caddy/access.log
+        format json
+    }
+}
+
+# Local development (HTTP only)
+:80 {
+    reverse_proxy api:8000
+}
+

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: echoagent
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: echoagent-config
+  namespace: echoagent
+data:
+  APP_ENV: "production"
+  LOG_LEVEL: "INFO"
+  REDIS_URL: "redis://redis.echoagent.svc.cluster.local:6379/0"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq.echoagent.svc.cluster.local:5672//"
+  DATABASE_URL: "postgresql+asyncpg://echo:secret@postgres.echoagent.svc.cluster.local:5432/echoagent"
+  MLFLOW_TRACKING_URI: "http://mlflow.echoagent.svc.cluster.local:5000"
+  AUDIO_STORAGE_PATH: "/data/audio"
+  MAX_SESSION_DURATION_SECONDS: "120"
+

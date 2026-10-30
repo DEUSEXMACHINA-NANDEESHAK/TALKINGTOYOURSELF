@@ -1,0 +1,50 @@
+# ── API Gateway ──────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-multipart==0.0.20
+
+# ── Async Support ────────────────────────────────
+httpx==0.28.1
+websockets==14.2
+
+# ── Message Broker & Task Queue ──────────────────
+celery[rabbitmq]==5.4.0
+kombu==5.4.2
+
+# ── Cache & Sessions ─────────────────────────────
+redis[hiredis]==5.2.1
+
+# ── Database ─────────────────────────────────────
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.1
+psycopg2-binary==2.9.10
+
+# ── ML Core ──────────────────────────────────────
+torch==2.5.1
+torchaudio==2.5.1
+librosa==0.10.2.post1
+soundfile==0.13.1
+noisereduce==3.0.3
+resemblyzer==0.1.4
+numpy==1.26.4
+scikit-learn==1.6.1
+
+# ── MLflow ───────────────────────────────────────
+mlflow==2.19.0
+
+# ── LLM & RAG ───────────────────────────────────
+chromadb==0.6.3
+sentence-transformers==3.3.1
+groq==0.14.0
+
+# ── Monitoring ───────────────────────────────────
+prometheus-client==0.21.1
+prometheus-fastapi-instrumentator==7.0.2
+
+# ── Utilities ────────────────────────────────────
+python-dotenv==1.0.1
+structlog==24.4.0
+

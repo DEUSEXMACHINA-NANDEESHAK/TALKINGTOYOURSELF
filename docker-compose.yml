@@ -1,0 +1,144 @@
+version: "3.8"
+
+services:
+  # ── API Gateway ────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
+      - DATABASE_URL=postgresql+asyncpg://echo:secret@postgres:5432/echoagent
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - AUDIO_STORAGE_PATH=/data/audio
+      - APP_ENV=production
+      - LOG_LEVEL=INFO
+    volumes:
+      - audio_data:/data/audio
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # ── Celery Worker ──────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
+      - DATABASE_URL=postgresql+asyncpg://echo:secret@postgres:5432/echoagent
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - AUDIO_STORAGE_PATH=/data/audio
+    volumes:
+      - audio_data:/data/audio
+      - mlflow_artifacts:/data/mlflow-artifacts
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+          cpus: "2.0"
+    restart: unless-stopped
+
+  # ── RabbitMQ ───────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Redis ──────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ── PostgreSQL ─────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=echoagent
+      - POSTGRES_USER=echo
+      - POSTGRES_PASSWORD=secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U echo -d echoagent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── MLflow Tracking Server ─────────────────────
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.16.0
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:///data/mlflow.db
+      --default-artifact-root /data/mlflow-artifacts
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/data
+      - mlflow_artifacts:/data/mlflow-artifacts
+    restart: unless-stopped
+
+volumes:
+  audio_data:
+  rabbitmq_data:
+  redis_data:
+  postgres_data:
+  mlflow_data:
+  mlflow_artifacts:
+

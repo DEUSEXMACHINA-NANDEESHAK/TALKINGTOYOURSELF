@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoAgent — Talk To Myself</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-pulse-ring { animation: pulse-ring 2s infinite ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white font-sans antialiased">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center font-black text-sm">
+                EA
+            </div>
+            <div>
+                <h1 class="text-base font-bold tracking-tight">EchoAgent</h1>
+                <p class="text-xs text-slate-400">MLOps Agentic Voice Cloning</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                System Operational
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-2xl w-full mx-auto p-6 my-auto flex flex-col items-center">
+
+        <!-- ── STATE 1: IDLE / LANDING ──────────────────────────── -->
+        <div id="section-idle" class="w-full text-center space-y-6">
+            <div class="space-y-2">
+                <h2 class="text-3xl font-extrabold tracking-tight sm:text-4xl bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                    Talk To Yourself
+                </h2>
+                <p class="text-sm text-slate-400 max-w-md mx-auto">
+                    Speak with our conversational AI for 120 seconds. We extract your vocal features in the background and clone your unique voice model.
+                </p>
+            </div>
+
+            <div class="pt-4">
+                <button id="btn-start" class="group relative inline-flex items-center justify-center px-8 py-3.5 text-sm font-semibold tracking-wide text-white transition-all bg-indigo-600 rounded-xl hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 active:scale-95">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"/>
+                    </svg>
+                    Start 120s Voice Session
+                </button>
+            </div>
+        </div>
+
+        <!-- ── STATE 2: ACTIVE CONVERSATION ────────────────────── -->
+        <div id="section-conversing" class="w-full space-y-6 hidden">
+            <div class="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-4 py-3">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-300">Live Recording</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-slate-400">Time Left:</span>
+                    <span id="timer-display" class="font-mono text-sm font-bold text-indigo-400">02:00</span>
+                </div>
+            </div>
+
+            <!-- Waveform Canvas -->
+            <div class="relative w-full h-32 bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden flex items-center justify-center">
+                <canvas id="waveform-canvas" class="w-full h-full"></canvas>
+            </div>
+
+            <!-- Dialog Box -->
+            <div class="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 space-y-2">
+                <p class="text-xs uppercase font-bold text-indigo-400 tracking-wider">EchoAgent Prompt</p>
+                <p id="transcript-text" class="text-sm text-slate-200 leading-relaxed italic">
+                    Connecting to voice gateway...
+                </p>
+            </div>
+
+            <div class="flex justify-center">
+                <button id="btn-end-early" class="text-xs text-slate-400 hover:text-slate-200 transition-colors underline underline-offset-4">
+                    Finish and train early
+                </button>
+            </div>
+        </div>
+
+        <!-- ── STATE 3: TRAINING STATUS BAR ───────────────────── -->
+        <div id="section-processing" class="w-full space-y-6 hidden">
+            <div class="text-center space-y-2">
+                <div class="inline-flex p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mb-2">
+                    <svg class="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-white">Training Your Voice Model</h3>
+                <p id="current-step-label" class="text-xs text-slate-400">Initializing pipeline...</p>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full space-y-2">
+                <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-800">
+                    <div id="progress-bar-fill" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-0 transition-all duration-300"></div>
+                </div>
+                <div class="flex justify-between text-xs text-slate-500 font-mono">
+                    <span id="step-counter">Step 1 of 5</span>
+                    <span id="percent-label">0%</span>
+                </div>
+            </div>
+
+            <!-- Pipeline Step List -->
+            <div class="space-y-2 bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 text-xs font-mono">
+                <div id="step-item-1" class="flex items-center text-slate-400">
+                    <span class="step-icon mr-2">⏳</span> 1. Audio Cleaning & Silence Trimming
+                </div>
+                <div id="step-item-2" class="flex items-center text-slate-400">
+                    <span class="step-icon mr-2">⏳</span> 2. Mel-Spectrogram & Feature Extraction
+                </div>
+                <div id="step-item-3" class="flex items-center text-slate-400">
+                    <span class="step-icon mr-2">⏳</span> 3. Speaker Embedding Generation
+                </div>
+                <div id="step-item-4" class="flex items-center text-slate-400">
+                    <span class="step-icon mr-2">⏳</span> 4. Voice Model Training Loop
+                </div>
+                <div id="step-item-5" class="flex items-center text-slate-400">
+                    <span class="step-icon mr-2">⏳</span> 5. MLflow Validation & Registry
+                </div>
+            </div>
+        </div>
+
+        <!-- ── STATE 4: POST-TRAINING FORK ─────────────────────── -->
+        <div id="section-ready" class="w-full space-y-6 text-center hidden">
+            <div class="inline-flex p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mb-2">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <div class="space-y-1">
+                <h3 class="text-2xl font-bold text-white">Voice Model Ready!</h3>
+                <p class="text-xs text-slate-400">Your unique voice profile has been registered in MLflow.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                <button id="btn-speak-to-self" class="w-full py-4 px-6 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95">
+                    🎭 Speak to Yourself
+                </button>
+                <button id="btn-record-again" class="w-full py-4 px-6 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm rounded-xl border border-slate-700 transition-all active:scale-95">
+                    🔄 Record Again
+                </button>
+            </div>
+        </div>
+
+        <!-- ── STATE 5: CLONED VOICE SESSION ──────────────────── -->
+        <div id="section-cloning" class="w-full space-y-6 hidden">
+            <div class="flex items-center justify-between bg-purple-950/40 border border-purple-800/60 rounded-xl px-4 py-3">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse"></span>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-purple-300">Cloned Voice Active</span>
+                </div>
+                <button id="btn-exit-clone" class="text-xs text-slate-400 hover:text-white">Exit</button>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center space-y-4">
+                <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-3xl shadow-xl shadow-purple-500/20 animate-pulse-ring">
+                    🗣️
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg text-white">Talking to Yourself</h4>
+                    <p id="cloned-transcript" class="text-sm text-slate-300 italic mt-2">
+                        "Hey! You are now hearing your own voice..."
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 py-4 text-center text-xs text-slate-600">
+        EchoAgent Core Architecture • Production MLOps Playground
+    </footer>
+
+    <script type="module" src="/src/app.js"></script>
+</body>
+</html>
+
